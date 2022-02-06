@@ -12,7 +12,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pingouin as pg
-import scipy.stats as stats
 import hypothetical as hp
 
 #%% DATA READING
@@ -42,9 +41,7 @@ census_raw['REGIAO_NASCIMENTO'].replace(['MA','PI','CE','RN','PB','PE',
 census_raw['REGIAO_NASCIMENTO'].replace(['MT','MS','GO','DF'], "Midwest", inplace = True)                   # Create region midwest
 census_raw['REGIAO_NASCIMENTO'].replace(['MG','ES','RJ','SP'], "South East", inplace = True)                # Create region south east
 census_raw['REGIAO_NASCIMENTO'].replace(['PR','SC','RS'], "South", inplace = True)                          # Create region south
-
-#%% FUNCTION TO STATISTICAL  WITH CONTINUOUS AND DISCRETE DATA     
-      
+   
 #%% FUNCTION TO CHI SQUARE TEST
 
 # Defining the chi square test
@@ -59,7 +56,7 @@ def chi_square(DataFrame, column_x, column_y, graph_title) :
         contigency = pd.crosstab(DataFrame[column_y], DataFrame[column_x], normalize='columns')             # Criate the crosstable for the graphs, normalizing the columns
         
         plt.figure(figsize=(12,8))                                                                          # Define the graph size
-        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS relationship".format(p_value))     # Insert the title with P-Value
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS relationship".format(p_value))      # Insert the title with P-Value
         sns.heatmap(contigency, annot=True, cmap='YlGnBu')                                                  # Plot a heatmap
         
     else :
@@ -124,7 +121,6 @@ title= 'Students with social support by the reservation\
 chi_square(df, 'IN_RESERVA_VAGAS', 'IN_APOIO_SOCIAL', title)                                                # Run the statistic test
 
 #%% STATISTICS: AGE VS RACE/COLOR
-
 df = census_raw.copy()                                                                                      # Copy Data Frame
 
 # Configuring and cleaning the Data Frame
@@ -132,19 +128,121 @@ df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                  
 df.drop(df[df.TP_COR_RACA == 'No response'].index, inplace=True)                                            # Remove students that haven't answered their color/race
 df.drop(df[df.TP_COR_RACA == 'Not Declare'].index, inplace=True)                                            # Remove students that haven't declared their color/race
 
-stat = pg.normality(df, dv='NU_IDADE', group='TP_COR_RACA', method='normaltest', alpha=0.05)
+graph_title = 'Students age distribution by race/color in Brazilian Universities'                           # Set graph title
 
-plt.figure(figsize =(12, 8))
-sns.set_theme(style="whitegrid")
-sns.boxplot(x= 'TP_COR_RACA', y='NU_IDADE', data=df)
+stat = pg.normality(df, dv='NU_IDADE', group='TP_COR_RACA', method='normaltest', alpha=0.05)                # Evaluate if the data have a normal distribution
+normality = stat['pval'][0]                                                                                 # Select the Person's P-Value
 
-test = df.pivot(values='NU_IDADE', columns='TP_COR_RACA')
-# white = test['White'].dropna()
-# print(white)
+#Test to perform the Mood's Median test
+if normality <= 0.05 :
+    
+    pivoted = df.pivot(values='NU_IDADE', columns='TP_COR_RACA')                                            # Create a DataFrame with race/color as columns and ages as values
+       
+    mood = hp.nonparametric.MedianTest(pivoted['White'].dropna(),                                           # Performs Mood's Median test
+                                       pivoted['Brown'].dropna(),
+                                       pivoted['Black'].dropna(),
+                                       pivoted['Indigenous'].dropna(),
+                                       pivoted['Yellow'].dropna())
+    p_value = mood.test_summary['p-value']                                                                  # Selects the P-Value
 
-mood = hp.nonparametric.MedianTest(test['White'].dropna(),
-                                   test['Brown'].dropna(),
-                                   test['Black'].dropna(),
-                                   test['Indigenous'].dropna(),
-                                   test['Yellow'].dropna())
-print(mood.test_summary)
+    # Verify if the test is significant
+    if p_value <= 0.05 :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS difference".format(p_value))        # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'TP_COR_RACA', y='NU_IDADE', data=df)                                                # Plot a boxplot
+        
+    else :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS NO difference".format(p_value))     # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'TP_COR_RACA', y='NU_IDADE', data=df)                                                # Plot a boxplot
+
+
+else :
+    
+    print("Age vs Race/color: it's a normal distribution! Try other statistical test.")                     # Message case the P-Value from the normality test is greater than 0.05
+
+#%% STATISTICS: AGE VS BIRTH REGION
+df = census_raw.copy()                                                                                      # Copy Data Frame
+
+# Configuring and cleaning the Data Frame
+df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
+
+graph_title = 'Students age distribution by region of birth in Brazilian Universities'                      # Set graph title
+
+stat = pg.normality(df, dv='NU_IDADE', group='REGIAO_NASCIMENTO', method='normaltest', alpha=0.05)          # Evaluate if the data have a normal distribution
+normality = stat['pval'][0]                                                                                 # Select the Person's P-Value
+
+#Test to perform the Mood's Median test
+if normality <= 0.05 :
+    
+    pivoted = df.pivot(values='NU_IDADE', columns='REGIAO_NASCIMENTO')                                      # Create a DataFrame with birth region as columns and ages as values
+       
+    mood = hp.nonparametric.MedianTest(pivoted['North'].dropna(),                                           # Performs Mood's Median test
+                                       pivoted['North East'].dropna(),
+                                       pivoted['Midwest'].dropna(),
+                                       pivoted['South East'].dropna(),
+                                       pivoted['South'].dropna())
+    p_value = mood.test_summary['p-value']                                                                  # Selects the P-Value
+
+    # Verify if the test is significant
+    if p_value <= 0.05 :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS difference".format(p_value))        # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'REGIAO_NASCIMENTO', y='NU_IDADE', data=df)                                          # Plot a boxplot
+
+    else :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS NO difference".format(p_value))     # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'REGIAO_NASCIMENTO', y='NU_IDADE', data=df)                                          # Plot a boxplot
+
+else :
+    
+    print("Age vs birth region: it's a normal distribution! Try other statistical test.")                   # Message case the P-Value from the normality test is greater than 0.05
+
+#%% STATISTICS: AGE VS GENDER
+df = census_raw.copy()                                                                                      # Copy Data Frame
+
+# Configuring and cleaning the Data Frame
+df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
+
+graph_title = 'Students age distribution by gender in Brazilian Universities'                               # Set graph title
+
+stat = pg.normality(df, dv='NU_IDADE', group='TP_SEXO', method='normaltest', alpha=0.05)                    # Evaluate if the data have a normal distribution
+normality = stat['pval'][0]                                                                                 # Select the Person's P-Value
+
+#Test to perform the Mood's Median test
+if normality <= 0.05 :
+    
+    # pivoted = df.pivot(values='NU_IDADE', columns='TP_SEXO')                                              # Create a DataFrame with birth region as columns and ages as values
+       
+    mann_whitney = hp.nonparametric.MannWhitney(group= df['TP_SEXO'],                                       # Performs Mann-Whitney test
+                                                y1= df['NU_IDADE'])
+    p_value = mann_whitney.test_summary['p-value']                                                          # Selects the P-Value
+
+    # Verify if the test is significant
+    if p_value <= 0.05 :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS difference".format(p_value))        # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'TP_SEXO', y='NU_IDADE', data=df)                                                    # Plot a boxplot
+
+    else :
+        
+        plt.figure(figsize=(12,8))                                                                          # Define the graph size
+        plt.title(graph_title + "\nPearson's P-Value: {:.3f} - THERE IS NO difference".format(p_value))     # Insert the title with P-Value
+        sns.set_theme(style="whitegrid")                                                                    # Set graph theme
+        sns.boxplot(x= 'TP_SEXO', y='NU_IDADE', data=df)                                                    # Plot a boxplot
+
+else :
+    
+    print("Age vs gender: it's a normal distribution! Try other statistical test.")                   # Message case the P-Value from the normality test is greater than 0.05
+

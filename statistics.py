@@ -56,12 +56,16 @@ def chi_square(x, y, title) :
         contigency = pd.crosstab(y,x, normalize='columns')                                                  # Re-criate the crosstable normalizing the columns
         
         plt.figure(figsize=(12,8))
-        plt.title(title + '\nP-Value: {:.3f}'.format(p_value))
+        plt.title(title + '\nP-Value: {:.3f} - THERE IS relationship between the variables'.format(p_value))
         sns.heatmap(contigency, annot=True, cmap='YlGnBu')                                                  # Plot a heatmap
         
     else :
+                
+        contigency = pd.crosstab(y,x, normalize='columns')                                                  # Re-criate the crosstable normalizing the columns
         
-        print('P-Value > 0,05: There is no relation between the groups!')                                   # Print a message if the test haven't significance
+        plt.figure(figsize=(12,8))
+        plt.title(title + '\nP-Value: {:.3f} - THERE IS NO relationship between the variables'.format(p_value))
+        sns.heatmap(contigency, annot=True, cmap='YlGnBu')                                                  # Plot a heatmap
         
 #%% STATISTICS: COLOR/RACE VS LOAN IN PRIVATE UNIVERSITIES
 df = census_raw.copy()                                                                                      # Copy Data Frame
@@ -72,7 +76,7 @@ df.drop(df[df.TP_CATEGORIA_ADMINISTRATIVA != 'Private'].index, inplace=True)    
 df.drop(df[df.TP_COR_RACA == 'No response'].index, inplace=True)                                            # Remove students that haven't answered their color/race
 df.drop(df[df.TP_COR_RACA == 'Not Declare'].index, inplace=True)                                            # Remove students that haven't declared their color/race
 
-title= "Student's loan by color/race\nin Brazilian Private Universities"                                     # Set the graph title
+title= "Student's loan by color/race in Brazilian Private Universities"                                     # Set the graph title
 chi_square(df['TP_COR_RACA'], df['IN_FINANCIAMENTO_ESTUDANTIL'], title)                                     # Run the stat test
 
 #%% STATISTICS: COLOR/RACE VS SOCIAL SUPPORT IN PUBLIC UNIVERSITIES
@@ -80,9 +84,38 @@ df = census_raw.copy()                                                          
 
 # Configuring and cleaning the Data Frame
 df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
-df.drop(df[df.TP_CATEGORIA_ADMINISTRATIVA != 'Public'].index, inplace=True)                                 # Select students from private institutions
+df.drop(df[df.TP_CATEGORIA_ADMINISTRATIVA != 'Public'].index, inplace=True)                                 # Select students from public institutions
 df.drop(df[df.TP_COR_RACA == 'No response'].index, inplace=True)                                            # Remove students that haven't answered their color/race
 df.drop(df[df.TP_COR_RACA == 'Not Declare'].index, inplace=True)                                            # Remove students that haven't declared their color/race
 
-title= 'Students with social support by color/race\in Brazilian Public Universities'                        # Set the graph title
+title= 'Students with social support by color/race in Brazilian Public Universities'                        # Set the graph title
 chi_square(df['TP_COR_RACA'], df['IN_APOIO_SOCIAL'], title)                                                 # Run the stat test
+
+#%% STATISTICS: EXTRACURRICULAR ACTIVITIES VS ADMINISTRATIVE CATEGORY
+df = census_raw.copy()                                                                                      # Copy Data Frame
+
+# Configuring and cleaning the Data Frame
+df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
+
+title= 'Students with extracurricular activities by the University administrative category'                 # Set the graph title
+chi_square(df['TP_CATEGORIA_ADMINISTRATIVA'], df['IN_ATIVIDADE_EXTRACURRICULAR'], title)                                                 # Run the stat test
+
+#%% STATISTICS: EXTRACURRICULAR ACTIVITIES VS SHIFT
+df = census_raw.copy()                                                                                      # Copy Data Frame
+
+# Configuring and cleaning the Data Frame
+df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
+
+title= 'Students with extracurricular activities by the course shift'                                       # Set the graph title
+chi_square(df['TP_TURNO'], df['IN_ATIVIDADE_EXTRACURRICULAR'], title)                                       # Run the stat test
+
+#%% STATISTICS: SOCIAL SUPPORT VS RESERVATION OF VACANCIES
+df = census_raw.copy()                                                                                      # Copy Data Frame
+
+# Configuring and cleaning the Data Frame
+df.drop(df[df.TP_SITUACAO != 'Attending'].index, inplace=True)                                              # Select students that are attending only
+df.drop(df[df.TP_CATEGORIA_ADMINISTRATIVA != 'Public'].index, inplace=True)                                 # Select students from public institutions
+
+title= 'Students with social support by the reservation\
+    of vacancies program in Brazilian Public Universities'                                                  # Set the graph title
+chi_square(df['IN_RESERVA_VAGAS'], df['IN_APOIO_SOCIAL'], title)                                            # Run the stat test

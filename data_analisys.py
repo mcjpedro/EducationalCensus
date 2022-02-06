@@ -376,3 +376,4 @@ plt.pie(count_extracurricular.values(), labels = count_extracurricular.keys(),
         autopct = "%1.1f%%", startangle = 90, colors = plot_color[1:3])                         # Makes a pie plot
 plt.tight_layout()                                                                              # Adjusts the layout
 
+census_raw.to_csv('SUP_ALUNO_2014_NEW.csv')                                                     # Save a new .csv file with all changes
